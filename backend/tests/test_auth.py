@@ -3,13 +3,13 @@ import pytest
 
 
 class TestAuth:
-    def test_register_and_login(self, client, app, db):
+    def test_register_and_login(self, client, app):
         resp = client.post("/api/auth/register", json={
             "name": "Test User",
             "phone": "11999887766",
             "password": "TestPass@123",
         })
-        assert resp.status_code == 201
+        assert resp.status_code == 201, resp.data
         data = resp.get_json()
         assert "user" in data
 
@@ -19,7 +19,7 @@ class TestAuth:
         })
         assert resp2.status_code == 200
 
-    def test_login_invalid_password(self, client, app, db):
+    def test_login_invalid_password(self, client, app):
         client.post("/api/auth/register", json={
             "name": "User X",
             "phone": "11999887700",
@@ -44,7 +44,7 @@ class TestAuth:
         resp = client.get("/api/auth/me")
         assert resp.status_code == 401
 
-    def test_me_returns_user(self, client, app, db):
+    def test_me_returns_user(self, client, app):
         client.post("/api/auth/register", json={
             "name": "Me User",
             "phone": "11988776655",
@@ -56,7 +56,7 @@ class TestAuth:
         data = resp.get_json()
         assert data["user"]["name"] == "Me User"
 
-    def test_phone_masked_in_response(self, client, app, db):
+    def test_phone_masked_in_response(self, client, app):
         client.post("/api/auth/register", json={
             "name": "Masked User",
             "phone": "11977665544",

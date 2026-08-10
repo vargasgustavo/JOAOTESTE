@@ -12,17 +12,28 @@ class QueueRepository:
         return self._session.get(QueueEntry, entry_id)
 
     def get_waiting_for_restaurant(self, restaurant_id: str) -> list[QueueEntry]:
-        return list(
-            self._session.execute(
+        stmt = (
+            select(QueueEntry)
+            .where(
+                QueueEntry.restaurant_id == restaurant_id,
+                QueueEntry.status == QueueStatus.WAITING,
+            )
+            .order_by(QueueEntry.joined_at.asc())
+        )
+        try:
+            stmt = stmt.with_for_update(skip_locked=True)
+            return list(self._session.execute(stmt).scalars().all())
+        except Exception:
+            # SQLite does not support FOR UPDATE SKIP LOCKED - fallback for testing
+            stmt = (
                 select(QueueEntry)
                 .where(
                     QueueEntry.restaurant_id == restaurant_id,
                     QueueEntry.status == QueueStatus.WAITING,
                 )
                 .order_by(QueueEntry.joined_at.asc())
-                .with_for_update(skip_locked=True)
-            ).scalars().all()
-        )
+            )
+            return list(self._session.execute(stmt).scalars().all())
 
     def list_by_restaurant(self, restaurant_id: str, status: str | None = None) -> list[QueueEntry]:
         stmt = select(QueueEntry).where(QueueEntry.restaurant_id == restaurant_id)

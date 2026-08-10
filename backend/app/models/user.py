@@ -1,7 +1,8 @@
 import enum
 from sqlalchemy import String, Boolean, DateTime, Enum as SAEnum, ForeignKey
 from sqlalchemy.orm import mapped_column, Mapped, relationship
-from .base import Base, utcnow, new_uuid
+from ..extensions import db
+from .base import utcnow, new_uuid
 
 
 class UserRole(str, enum.Enum):
@@ -10,7 +11,7 @@ class UserRole(str, enum.Enum):
     STAFF = "STAFF"
 
 
-class User(Base):
+class User(db.Model):
     __tablename__ = "users"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)

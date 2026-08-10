@@ -1,7 +1,8 @@
 import enum
 from sqlalchemy import String, Integer, DateTime, Enum as SAEnum, ForeignKey, Index
 from sqlalchemy.orm import mapped_column, Mapped, relationship
-from .base import Base, utcnow, new_uuid
+from ..extensions import db
+from .base import utcnow, new_uuid
 
 
 class QueueStatus(str, enum.Enum):
@@ -12,7 +13,7 @@ class QueueStatus(str, enum.Enum):
     EXPIRED = "EXPIRED"
 
 
-class QueueEntry(Base):
+class QueueEntry(db.Model):
     __tablename__ = "queue_entries"
     __table_args__ = (
         Index("ix_queue_entries_restaurant_status_joined", "restaurant_id", "status", "joined_at"),

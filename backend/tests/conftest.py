@@ -1,44 +1,58 @@
 import os
 import pytest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 os.environ.setdefault("SECRET_KEY", "test-secret-key-minimum-length-32")
 os.environ.setdefault("JWT_SECRET_KEY", "test-jwt-secret-key-minimum-32ch")
-os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379/15")
 os.environ.setdefault("FRONTEND_URL", "http://localhost:3000")
 os.environ.setdefault("ARGON2_TIME_COST", "1")
 os.environ.setdefault("ARGON2_MEMORY_COST", "8192")
 os.environ.setdefault("ARGON2_PARALLELISM", "1")
 
+TEST_DB_PATH = os.path.join(os.path.dirname(__file__), "test_restaurant.db")
+TEST_DB_URL = f"sqlite:///{TEST_DB_PATH}"
+
+# Mock Redis globally so tests don't need Redis running
+mock_redis = MagicMock()
+mock_redis.exists.return_value = False
+mock_redis.setex.return_value = True
+
+
+@pytest.fixture(scope="session", autouse=True)
+def mock_redis_globally():
+    with patch("app.services.auth_service.redis.from_url", return_value=mock_redis):
+        yield
+
 
 @pytest.fixture(scope="session")
 def app():
     from app import create_app
+    from app.extensions import db
     application = create_app("testing")
-    application.config["TESTING"] = True
-    application.config["WTF_CSRF_ENABLED"] = False
-    application.config["RATELIMIT_ENABLED"] = False
-    application.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
-    return application
-
-
-@pytest.fixture(scope="session")
-def db(app):
-    from app.extensions import db as _db
-    with app.app_context():
-        _db.create_all()
-        yield _db
-        _db.drop_all()
+    application.config.update({
+        "TESTING": True,
+        "WTF_CSRF_ENABLED": False,
+        "RATELIMIT_ENABLED": False,
+        "SQLALCHEMY_DATABASE_URI": TEST_DB_URL,
+    })
+    with application.app_context():
+        db.create_all()
+        yield application
+        db.drop_all()
+    if os.path.exists(TEST_DB_PATH):
+        os.remove(TEST_DB_PATH)
 
 
 @pytest.fixture(autouse=True)
-def clean_db(db):
+def clean_tables(app):
+    from app.extensions import db
     yield
-    db.session.rollback()
-    for table in reversed(db.metadata.sorted_tables):
-        db.session.execute(table.delete())
-    db.session.commit()
+    with app.app_context():
+        db.session.remove()
+        for table in reversed(db.metadata.sorted_tables):
+            db.session.execute(table.delete())
+        db.session.commit()
 
 
 @pytest.fixture
@@ -47,8 +61,9 @@ def client(app):
 
 
 @pytest.fixture
-def restaurant(db, app):
+def restaurant(app):
     from app.models import Restaurant
+    from app.extensions import db
     with app.app_context():
         r = Restaurant(
             name="Test Restaurant",
@@ -58,13 +73,19 @@ def restaurant(db, app):
         )
         db.session.add(r)
         db.session.commit()
-        db.session.refresh(r)
-        return r
+        # Return a simple namespace with the id
+        class Obj:
+            pass
+        obj = Obj()
+        obj.id = r.id
+        obj.name = r.name
+        return obj
 
 
 @pytest.fixture
-def admin_user(db, app, restaurant):
+def admin_user(app, restaurant):
     from app.models import User, UserRole
+    from app.extensions import db
     from argon2 import PasswordHasher
     ph = PasswordHasher(time_cost=1, memory_cost=8192, parallelism=1)
     with app.app_context():
@@ -77,13 +98,19 @@ def admin_user(db, app, restaurant):
         )
         db.session.add(u)
         db.session.commit()
-        db.session.refresh(u)
-        return u
+        class Obj:
+            pass
+        obj = Obj()
+        obj.id = u.id
+        obj.phone = u.phone
+        obj.restaurant_id = u.restaurant_id
+        return obj
 
 
 @pytest.fixture
-def staff_user(db, app, restaurant):
+def staff_user(app, restaurant):
     from app.models import User, UserRole
+    from app.extensions import db
     from argon2 import PasswordHasher
     ph = PasswordHasher(time_cost=1, memory_cost=8192, parallelism=1)
     with app.app_context():
@@ -96,13 +123,19 @@ def staff_user(db, app, restaurant):
         )
         db.session.add(u)
         db.session.commit()
-        db.session.refresh(u)
-        return u
+        class Obj:
+            pass
+        obj = Obj()
+        obj.id = u.id
+        obj.phone = u.phone
+        obj.restaurant_id = u.restaurant_id
+        return obj
 
 
 @pytest.fixture
-def customer_user(db, app):
+def customer_user(app):
     from app.models import User, UserRole
+    from app.extensions import db
     from argon2 import PasswordHasher
     ph = PasswordHasher(time_cost=1, memory_cost=8192, parallelism=1)
     with app.app_context():
@@ -114,12 +147,10 @@ def customer_user(db, app):
         )
         db.session.add(u)
         db.session.commit()
-        db.session.refresh(u)
-        return u
-
-
-def get_auth_cookies(client, phone: str, password: str) -> dict:
-    """Helper: login and return cookies."""
-    resp = client.post("/api/auth/login", json={"phone": phone, "password": password})
-    assert resp.status_code == 200, f"Login failed: {resp.data}"
-    return {c.name: c.value for c in client.cookie_jar}
+        class Obj:
+            pass
+        obj = Obj()
+        obj.id = u.id
+        obj.phone = u.phone
+        obj.restaurant_id = None
+        return obj

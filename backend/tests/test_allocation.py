@@ -1,4 +1,4 @@
-"""Test: FIFO allocation, invalid transitions, RBAC, tenant isolation."""
+"""Test: FIFO allocation, invalid transitions."""
 import pytest
 from unittest.mock import patch
 
@@ -6,9 +6,10 @@ from unittest.mock import patch
 class TestFIFOAllocation:
     """Table cap=4, queue=[João-4, Maria-2, Pedro-5] → João gets table."""
 
-    def test_fifo_compatible_allocation(self, app, db, restaurant):
+    def test_fifo_compatible_allocation(self, app, restaurant):
         from app.models import Table, TableStatus, QueueEntry, QueueStatus
         from app.services.table_allocation_service import TableAllocationService
+        from app.extensions import db
 
         with app.app_context():
             table = Table(
@@ -51,38 +52,26 @@ class TestFIFOAllocation:
             assert allocated.customer_name == "João"
             assert allocated.status == QueueStatus.CALLED
             assert table.status == TableStatus.RESERVED
-
             db.session.commit()
 
 
 class TestInvalidTableTransitions:
-    """AVAILABLE → OCCUPIED (skipping RESERVED) must return 409."""
-
-    def test_available_to_occupied_is_invalid(self, app, db, restaurant):
+    def test_available_to_occupied_is_invalid(self, app, restaurant):
         from app.models import Table, TableStatus
+        from app.extensions import db
 
         with app.app_context():
-            table = Table(
-                restaurant_id=restaurant.id,
-                number=2,
-                capacity=4,
-                status=TableStatus.AVAILABLE,
-            )
+            table = Table(restaurant_id=restaurant.id, number=2, capacity=4, status=TableStatus.AVAILABLE)
             db.session.add(table)
             db.session.commit()
-
             assert not table.can_transition_to(TableStatus.OCCUPIED)
 
-    def test_valid_full_cycle(self, app, db, restaurant):
+    def test_valid_full_cycle(self, app, restaurant):
         from app.models import Table, TableStatus
+        from app.extensions import db
 
         with app.app_context():
-            table = Table(
-                restaurant_id=restaurant.id,
-                number=3,
-                capacity=4,
-                status=TableStatus.OCCUPIED,
-            )
+            table = Table(restaurant_id=restaurant.id, number=3, capacity=4, status=TableStatus.OCCUPIED)
             db.session.add(table)
             db.session.commit()
 
@@ -94,31 +83,16 @@ class TestInvalidTableTransitions:
             table.status = TableStatus.RESERVED
             assert table.can_transition_to(TableStatus.OCCUPIED)
 
-    def test_transition_endpoint_returns_409(self, client, app, db, restaurant, staff_user):
+    def test_transition_endpoint_returns_409(self, client, app, restaurant, staff_user):
         from app.models import Table, TableStatus
+        from app.extensions import db
+
         with app.app_context():
-            table = Table(
-                restaurant_id=restaurant.id,
-                number=4,
-                capacity=4,
-                status=TableStatus.AVAILABLE,
-            )
+            table = Table(restaurant_id=restaurant.id, number=4, capacity=4, status=TableStatus.AVAILABLE)
             db.session.add(table)
             db.session.commit()
             table_id = table.id
 
-        cookies = _login(client, "11000000002", "Staff@123")
-        resp = client.post(
-            f"/api/tables/{table_id}/release",
-            headers={"Cookie": _cookie_header(cookies)},
-        )
+        client.post("/api/auth/login", json={"phone": staff_user.phone, "password": "Staff@123"})
+        resp = client.post(f"/api/tables/{table_id}/release")
         assert resp.status_code == 409
-
-
-def _login(client, phone, password):
-    resp = client.post("/api/auth/login", json={"phone": phone, "password": password})
-    return {c.name: c.value for c in client.cookie_jar}
-
-
-def _cookie_header(cookies: dict) -> str:
-    return "; ".join(f"{k}={v}" for k, v in cookies.items())

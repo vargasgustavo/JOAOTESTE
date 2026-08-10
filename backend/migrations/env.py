@@ -8,10 +8,10 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-from app.models.base import Base
+from app.extensions import db
 from app.models import User, Restaurant, Table, QueueEntry, TableEvent, Notification
 
-target_metadata = Base.metadata
+target_metadata = db.metadata
 
 database_url = os.environ.get("DATABASE_URL")
 if database_url:

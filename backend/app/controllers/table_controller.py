@@ -82,10 +82,10 @@ def manual_allocate(table_id: str):
     table = repo.get_by_id(table_id)
     if not table:
         return jsonify({"error": "Table not found"}), 404
+    alloc_svc = TableAllocationService()
+    entry = alloc_svc.try_allocate_for_table(table)
     from ..extensions import db
-    with db.session.begin():
-        alloc_svc = TableAllocationService()
-        entry = alloc_svc.try_allocate_for_table(table)
+    db.session.commit()
     if entry:
         return jsonify({"message": "Allocated", "queue_entry_id": entry.id}), 200
     return jsonify({"message": "No compatible group found"}), 200

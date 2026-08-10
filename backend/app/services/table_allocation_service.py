@@ -24,7 +24,6 @@ class TableAllocationService:
         Called when a table becomes AVAILABLE.
         Finds the first WAITING entry whose party_size <= table.capacity.
         Returns the allocated QueueEntry or None.
-        Must be called inside an active db.session transaction.
         """
         waiting_entries = self._queue_repo.get_waiting_for_restaurant(table.restaurant_id)
 

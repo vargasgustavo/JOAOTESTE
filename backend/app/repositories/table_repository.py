@@ -19,14 +19,22 @@ class TableRepository:
         )
 
     def get_available_for_restaurant(self, restaurant_id: str) -> list[Table]:
-        return list(
-            self._session.execute(
-                select(Table).where(
-                    Table.restaurant_id == restaurant_id,
-                    Table.status == TableStatus.AVAILABLE,
-                ).with_for_update(skip_locked=True)
-            ).scalars().all()
+        stmt = (
+            select(Table).where(
+                Table.restaurant_id == restaurant_id,
+                Table.status == TableStatus.AVAILABLE,
+            )
         )
+        try:
+            stmt = stmt.with_for_update(skip_locked=True)
+            return list(self._session.execute(stmt).scalars().all())
+        except Exception:
+            # SQLite does not support FOR UPDATE SKIP LOCKED - fallback for testing
+            stmt = select(Table).where(
+                Table.restaurant_id == restaurant_id,
+                Table.status == TableStatus.AVAILABLE,
+            )
+            return list(self._session.execute(stmt).scalars().all())
 
     def create(self, **kwargs) -> Table:
         table = Table(**kwargs)

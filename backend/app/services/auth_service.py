@@ -37,15 +37,15 @@ class AuthService:
         hasher = self._get_hasher()
         password_hash = hasher.hash(password)
 
-        with db.session.begin():
-            user = self._user_repo.create(
-                name=name,
-                phone=phone,
-                email=email,
-                password_hash=password_hash,
-                role=UserRole(role),
-                restaurant_id=restaurant_id,
-            )
+        user = self._user_repo.create(
+            name=name,
+            phone=phone,
+            email=email,
+            password_hash=password_hash,
+            role=UserRole(role),
+            restaurant_id=restaurant_id,
+        )
+        db.session.commit()
         return user
 
     def login(self, phone: str, password: str) -> tuple[str, str]:

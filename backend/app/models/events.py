@@ -1,11 +1,11 @@
 from sqlalchemy import String, DateTime, ForeignKey, Text
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy import JSON
 from sqlalchemy.orm import mapped_column, Mapped, relationship
-from .base import Base, utcnow, new_uuid
+from ..extensions import db
+from .base import utcnow, new_uuid
 
 
-class TableEvent(Base):
+class TableEvent(db.Model):
     __tablename__ = "table_events"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
@@ -22,7 +22,7 @@ class TableEvent(Base):
         return f"<TableEvent {self.id} {self.event_type}>"
 
 
-class Notification(Base):
+class Notification(db.Model):
     __tablename__ = "notifications"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)

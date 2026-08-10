@@ -19,12 +19,12 @@ class RestaurantService:
         return restaurant
 
     def create_restaurant(self, **kwargs) -> Restaurant:
-        with db.session.begin():
-            restaurant = self._repo.create(**kwargs)
+        restaurant = self._repo.create(**kwargs)
+        db.session.commit()
         return restaurant
 
     def update_restaurant(self, restaurant_id: str, **kwargs) -> Restaurant:
         restaurant = self.get_restaurant(restaurant_id)
-        with db.session.begin():
-            self._repo.update(restaurant, **kwargs)
+        self._repo.update(restaurant, **kwargs)
+        db.session.commit()
         return restaurant

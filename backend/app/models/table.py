@@ -1,7 +1,8 @@
 import enum
 from sqlalchemy import String, Integer, Float, DateTime, Enum as SAEnum, ForeignKey, Index
 from sqlalchemy.orm import mapped_column, Mapped, relationship
-from .base import Base, utcnow, new_uuid
+from ..extensions import db
+from .base import utcnow, new_uuid
 
 
 class TableStatus(str, enum.Enum):
@@ -19,7 +20,7 @@ VALID_TRANSITIONS: dict[TableStatus, list[TableStatus]] = {
 }
 
 
-class Table(Base):
+class Table(db.Model):
     __tablename__ = "tables"
     __table_args__ = (
         Index("ix_tables_restaurant_status", "restaurant_id", "status"),

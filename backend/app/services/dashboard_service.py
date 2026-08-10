@@ -1,4 +1,4 @@
-from sqlalchemy import text, select, func
+from sqlalchemy import select, func, case
 from ..models import Table, TableStatus, QueueEntry, QueueStatus
 from ..repositories import RestaurantRepository
 from ..extensions import db
@@ -15,33 +15,55 @@ class DashboardService:
         if not restaurant:
             return None
 
-        table_stats = db.session.execute(
-            select(
-                func.count(Table.id).label("total"),
-                func.sum((Table.status == TableStatus.OCCUPIED).cast(db.Integer)).label("occupied"),
-                func.sum((Table.status == TableStatus.CLEANING).cast(db.Integer)).label("cleaning"),
-                func.sum((Table.status == TableStatus.AVAILABLE).cast(db.Integer)).label("available"),
-                func.sum((Table.status == TableStatus.RESERVED).cast(db.Integer)).label("reserved"),
-            ).where(Table.restaurant_id == restaurant_id)
-        ).one()
+        total = db.session.execute(
+            select(func.count(Table.id)).where(Table.restaurant_id == restaurant_id)
+        ).scalar_one() or 0
+
+        occupied = db.session.execute(
+            select(func.count(Table.id)).where(
+                Table.restaurant_id == restaurant_id,
+                Table.status == TableStatus.OCCUPIED,
+            )
+        ).scalar_one() or 0
+
+        cleaning = db.session.execute(
+            select(func.count(Table.id)).where(
+                Table.restaurant_id == restaurant_id,
+                Table.status == TableStatus.CLEANING,
+            )
+        ).scalar_one() or 0
+
+        available = db.session.execute(
+            select(func.count(Table.id)).where(
+                Table.restaurant_id == restaurant_id,
+                Table.status == TableStatus.AVAILABLE,
+            )
+        ).scalar_one() or 0
+
+        reserved = db.session.execute(
+            select(func.count(Table.id)).where(
+                Table.restaurant_id == restaurant_id,
+                Table.status == TableStatus.RESERVED,
+            )
+        ).scalar_one() or 0
 
         queue_count = db.session.execute(
             select(func.count(QueueEntry.id)).where(
                 QueueEntry.restaurant_id == restaurant_id,
                 QueueEntry.status == QueueStatus.WAITING,
             )
-        ).scalar_one()
+        ).scalar_one() or 0
 
         avg_wait = self._wait_svc.estimate_wait(1)
 
         return {
             "restaurant_id": restaurant_id,
             "restaurant_name": restaurant.name,
-            "total_tables": table_stats.total or 0,
-            "occupied_tables": int(table_stats.occupied or 0),
-            "cleaning_tables": int(table_stats.cleaning or 0),
-            "available_tables": int(table_stats.available or 0),
-            "reserved_tables": int(table_stats.reserved or 0),
-            "queue_count": queue_count or 0,
+            "total_tables": total,
+            "occupied_tables": occupied,
+            "cleaning_tables": cleaning,
+            "available_tables": available,
+            "reserved_tables": reserved,
+            "queue_count": queue_count,
             "avg_wait_minutes": avg_wait,
         }

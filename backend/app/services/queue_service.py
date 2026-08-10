@@ -45,8 +45,7 @@ class QueueService:
         if not restaurant or not restaurant.is_active:
             abort(404, "Restaurant not found or inactive")
 
-        with db.session.begin():
-            entry = self._repo.create(
+        entry = self._repo.create(
                 restaurant_id=restaurant_id,
                 customer_id=customer_id,
                 customer_name=customer_name,
@@ -54,10 +53,11 @@ class QueueService:
                 party_size=party_size,
                 status=QueueStatus.WAITING,
             )
-            db.session.flush()
+        db.session.flush()
 
-            alloc_svc = TableAllocationService()
-            alloc_svc.try_allocate_for_new_entry(entry)
+        alloc_svc = TableAllocationService()
+        alloc_svc.try_allocate_for_new_entry(entry)
+        db.session.commit()
 
         position = None
         estimated = None
@@ -80,7 +80,7 @@ class QueueService:
             abort(409, "Cannot cancel entry in current status")
 
         from datetime import datetime, timezone
-        with db.session.begin():
-            entry.status = QueueStatus.CANCELLED
-            entry.cancelled_at = datetime.now(timezone.utc)
+        entry.status = QueueStatus.CANCELLED
+        entry.cancelled_at = datetime.now(timezone.utc)
+        db.session.commit()
         return entry

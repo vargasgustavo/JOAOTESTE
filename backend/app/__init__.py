@@ -1,7 +1,7 @@
 import os
 import secrets
 import sentry_sdk
-from flask import Flask
+from flask import Flask, request
 from sentry_sdk.integrations.flask import FlaskIntegration
 
 from .config import config_map
@@ -38,6 +38,11 @@ def _init_sentry(app: Flask) -> None:
 def _init_extensions(app: Flask) -> Flask:
     db.init_app(app)
     migrate.init_app(app, db)
+
+    if app.config.get("RATELIMIT_ENABLED", True) and not app.config.get("TESTING"):
+        app.config["RATELIMIT_STORAGE_URI"] = app.config.get("REDIS_URL", "memory://")
+    else:
+        app.config["RATELIMIT_STORAGE_URI"] = "memory://"
     limiter.init_app(app)
 
     cors.init_app(
@@ -59,8 +64,8 @@ def _init_extensions(app: Flask) -> Flask:
 
     @app.after_request
     def set_csrf_cookie(response):
-        if not app.config.get("TESTING"):
-            if "csrf_token" not in app.cookies_to_set if hasattr(app, "cookies_to_set") else True:
+        if not app.config.get("TESTING") and not app.config.get("WTF_CSRF_ENABLED") is False:
+            if not request.cookies.get(app.config["CSRF_COOKIE_NAME"]):
                 csrf_val = secrets.token_hex(32)
                 response.set_cookie(
                     app.config["CSRF_COOKIE_NAME"],

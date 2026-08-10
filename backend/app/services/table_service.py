@@ -33,35 +33,35 @@ class TableService:
         return table
 
     def create_table(self, restaurant_id: str, **kwargs) -> Table:
-        with db.session.begin():
-            table = self._repo.create(restaurant_id=restaurant_id, **kwargs)
+        table = self._repo.create(restaurant_id=restaurant_id, **kwargs)
+        db.session.commit()
         return table
 
     def update_table(self, table_id: str, **kwargs) -> Table:
         table = self.get_table(table_id)
-        with db.session.begin():
-            self._repo.update(table, **kwargs)
+        self._repo.update(table, **kwargs)
+        db.session.commit()
         return table
 
     def _transition(self, table_id: str, new_status: TableStatus) -> Table:
-        with db.session.begin():
-            table = self._repo.get_by_id(table_id)
-            if not table:
-                abort(404, "Table not found")
-            if not table.can_transition_to(new_status):
-                abort(409, f"Invalid transition: {table.status} → {new_status}")
+        table = self._repo.get_by_id(table_id)
+        if not table:
+            abort(404, "Table not found")
+        if not table.can_transition_to(new_status):
+            abort(409, f"Invalid transition: {table.status} → {new_status}")
 
-            table.status = new_status
+        table.status = new_status
 
-            event_type = STATUS_TO_EVENT.get(new_status)
-            if event_type:
-                event_svc = EventService()
-                event_svc.emit(table.id, event_type)
+        event_type = STATUS_TO_EVENT.get(new_status)
+        if event_type:
+            event_svc = EventService()
+            event_svc.emit(table.id, event_type)
 
-            if new_status == TableStatus.AVAILABLE:
-                alloc_svc = TableAllocationService()
-                alloc_svc.try_allocate_for_table(table)
+        if new_status == TableStatus.AVAILABLE:
+            alloc_svc = TableAllocationService()
+            alloc_svc.try_allocate_for_table(table)
 
+        db.session.commit()
         return table
 
     def release_table(self, table_id: str) -> Table:
@@ -74,14 +74,14 @@ class TableService:
 
     def occupy_table(self, table_id: str) -> Table:
         """RESERVED → OCCUPIED."""
-        with db.session.begin():
-            table = self._repo.get_by_id(table_id)
-            if not table:
-                abort(404, "Table not found")
-            if not table.can_transition_to(TableStatus.OCCUPIED):
-                abort(409, f"Invalid transition: {table.status} → OCCUPIED")
-            table.status = TableStatus.OCCUPIED
-            event_svc = EventService()
-            event_svc.emit(table.id, EVENT_TABLE_OCCUPIED)
-            event_svc.emit(table.id, EVENT_CUSTOMER_SEATED)
+        table = self._repo.get_by_id(table_id)
+        if not table:
+            abort(404, "Table not found")
+        if not table.can_transition_to(TableStatus.OCCUPIED):
+            abort(409, f"Invalid transition: {table.status} → OCCUPIED")
+        table.status = TableStatus.OCCUPIED
+        event_svc = EventService()
+        event_svc.emit(table.id, EVENT_TABLE_OCCUPIED)
+        event_svc.emit(table.id, EVENT_CUSTOMER_SEATED)
+        db.session.commit()
         return table

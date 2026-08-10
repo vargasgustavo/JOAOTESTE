@@ -3,8 +3,8 @@ from datetime import timedelta
 
 
 class Config:
-    SECRET_KEY = os.environ["SECRET_KEY"]
-    SQLALCHEMY_DATABASE_URI = os.environ["DATABASE_URL"]
+    SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-change-me")
+    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "sqlite:///:memory:")
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_pre_ping": True,
         "pool_recycle": 300,
@@ -13,7 +13,7 @@ class Config:
 
     REDIS_URL = os.environ.get("REDIS_URL", "redis://redis:6379/0")
 
-    JWT_SECRET_KEY = os.environ["JWT_SECRET_KEY"]
+    JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "dev-jwt-secret-change-me")
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=15)
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=7)
     JWT_COOKIE_SECURE = os.environ.get("JWT_COOKIE_SECURE", "true").lower() == "true"
@@ -47,9 +47,7 @@ class DevelopmentConfig(Config):
 class TestingConfig(Config):
     TESTING = True
     JWT_COOKIE_SECURE = False
-    SQLALCHEMY_DATABASE_URI = os.environ.get(
-        "TEST_DATABASE_URL", "******localhost:5432/restaurant_test"
-    )
+    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     RATELIMIT_ENABLED = False
     WTF_CSRF_ENABLED = False
     SECRET_KEY = "test-secret-key-change-me"
@@ -58,6 +56,12 @@ class TestingConfig(Config):
 
 class ProductionConfig(Config):
     DEBUG = False
+
+    def __init__(self):
+        for key in ("SECRET_KEY", "JWT_SECRET_KEY", "DATABASE_URL"):
+            import os as _os
+            if not _os.environ.get(key):
+                raise RuntimeError(f"{key} must be set in production")
 
 
 config_map = {
