@@ -48,7 +48,7 @@ class AuthService:
         db.session.commit()
         return user
 
-    def login(self, phone: str, password: str) -> tuple[str, str]:
+    def login(self, phone: str, password: str) -> tuple[str, str, "User"]:
         user = self._user_repo.get_by_phone(phone)
         if not user:
             raise ValueError("Invalid credentials")
@@ -65,7 +65,7 @@ class AuthService:
 
         access_token = self._create_access_token(user)
         refresh_token = self._create_refresh_token(user)
-        return access_token, refresh_token
+        return access_token, refresh_token, user
 
     def _create_access_token(self, user: User) -> str:
         now = datetime.now(timezone.utc)

@@ -27,7 +27,7 @@ def register():
     except ValueError as e:
         return jsonify({"error": str(e)}), 409
 
-    access_token, refresh_token = auth_svc.login(data["phone"], data["password"])
+    access_token, refresh_token, _ = auth_svc.login(data["phone"], data["password"])
     response = make_response(jsonify({"user": _user_schema.dump(user), "message": "Registered"}), 201)
     _set_tokens(response, access_token, refresh_token)
     return response
@@ -44,15 +44,9 @@ def login():
 
     auth_svc = AuthService()
     try:
-        access_token, refresh_token = auth_svc.login(data["phone"], data["password"])
+        access_token, refresh_token, user = auth_svc.login(data["phone"], data["password"])
     except ValueError as e:
         return jsonify({"error": str(e)}), 401
-
-    from ..repositories import UserRepository
-    user_repo = UserRepository()
-    import jwt as pyjwt
-    payload = pyjwt.decode(access_token, current_app.config["JWT_SECRET_KEY"], algorithms=["HS256"])
-    user = user_repo.get_by_id(payload["sub"])
 
     response = make_response(jsonify({"user": _user_schema.dump(user), "message": "Logged in"}), 200)
     _set_tokens(response, access_token, refresh_token)
