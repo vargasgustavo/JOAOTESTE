@@ -1,0 +1,16 @@
+.env
+*.pyc
+__pycache__/
+.pytest_cache/
+.next/
+node_modules/
+*.egg-info/
+dist/
+build/
+*.log
+.DS_Store
+postgres_data/
+redis_data/
+htmlcov/
+.coverage
+*.sqlite3

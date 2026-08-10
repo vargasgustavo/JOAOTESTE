@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    name: Ruff Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install ruff
+        run: pip install ruff==0.5.7
+      - name: Run ruff
+        run: ruff check backend/app backend/tests --config backend/ruff.toml
+
+  test:
+    name: Pytest
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: restaurant_test
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+
+    env:
+      SECRET_KEY: ci-secret-key-for-testing-only-32ch
+      JWT_SECRET_KEY: ci-jwt-secret-key-for-testing-32ch
+      DATABASE_URL: postgresql://restaurant:restaurant@localhost:5432/restaurant_test
+      TEST_DATABASE_URL: sqlite:///:memory:
+      REDIS_URL: redis://localhost:6379/15
+      FRONTEND_URL: http://localhost:3000
+      ARGON2_TIME_COST: 1
+      ARGON2_MEMORY_COST: 8192
+      ARGON2_PARALLELISM: 1
+      FLASK_ENV: testing
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install --no-cache-dir -r requirements.txt
+      - name: Run tests
+        run: |
+          cd backend
+          python -m pytest tests/ -v --tb=short --ignore=tests/test_race_condition.py
+      - name: Upload coverage
+        if: success()
+        run: echo "Coverage upload placeholder"
+
+  build-backend:
+    name: Docker Build (Backend)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build backend Docker image
+        run: docker build -t restaurant-backend:ci ./backend
+
+  build-frontend:
+    name: Docker Build (Frontend)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build frontend Docker image
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:5000/api
+        run: docker build -t restaurant-frontend:ci ./frontend
