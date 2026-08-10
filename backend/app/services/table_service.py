@@ -1,15 +1,17 @@
 from flask import abort
 
-from ..models import Table, TableStatus, VALID_TRANSITIONS
-from ..repositories import TableRepository
 from ..extensions import db
+from ..models import Table, TableStatus
+from ..repositories import TableRepository
 from .event_service import (
-    EventService,
-    EVENT_TABLE_AVAILABLE, EVENT_TABLE_CLEANING, EVENT_TABLE_OCCUPIED, EVENT_TABLE_RESERVED,
     EVENT_CUSTOMER_SEATED,
+    EVENT_TABLE_AVAILABLE,
+    EVENT_TABLE_CLEANING,
+    EVENT_TABLE_OCCUPIED,
+    EVENT_TABLE_RESERVED,
+    EventService,
 )
 from .table_allocation_service import TableAllocationService
-
 
 STATUS_TO_EVENT = {
     TableStatus.AVAILABLE: EVENT_TABLE_AVAILABLE,

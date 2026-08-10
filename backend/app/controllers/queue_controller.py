@@ -1,11 +1,10 @@
-from flask import Blueprint, request, jsonify, g
+from flask import Blueprint, jsonify, request
 from marshmallow import ValidationError
 
-from ..services.queue_service import QueueService
-from ..schemas import QueueEntryCreateSchema, QueueEntrySchema
-from .middleware import require_auth, require_roles, require_csrf, verify_restaurant_access
-from ..models import UserRole
 from ..extensions import limiter
+from ..schemas import QueueEntryCreateSchema, QueueEntrySchema
+from ..services.queue_service import QueueService
+from .middleware import require_auth, require_csrf, verify_restaurant_access
 
 queue_bp = Blueprint("queue", __name__)
 _create_schema = QueueEntryCreateSchema()
@@ -61,9 +60,23 @@ def join_queue(restaurant_id: str):
 
 
 @queue_bp.get("/queue/<entry_id>")
+@require_auth
 def get_queue_entry(entry_id: str):
+    from ..services.auth_service import AuthService
+
+    token = request.cookies.get("access_token")
+    payload = AuthService().decode_token(token)
+    role = payload.get("role", "")
+    user_id = payload.get("sub")
+
     result = _svc.get_entry(entry_id)
-    dumped = _schema.dump(result["entry"])
+    entry = result["entry"]
+
+    # CUSTOMER may only view their own entry; STAFF/ADMIN can view any entry
+    if role == "CUSTOMER" and str(entry.customer_id) != user_id:
+        return jsonify({"error": "Access denied"}), 403
+
+    dumped = _schema.dump(entry)
     dumped["position"] = result["position"]
     dumped["estimated_wait_minutes"] = result["estimated_wait"]
     return jsonify({"queue_entry": dumped}), 200

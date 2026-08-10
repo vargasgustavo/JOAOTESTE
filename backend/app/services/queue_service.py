@@ -1,10 +1,10 @@
 from flask import abort
 
+from ..extensions import db
 from ..models import QueueEntry, QueueStatus
 from ..repositories import QueueRepository, RestaurantRepository
-from ..extensions import db
-from .wait_time_service import WaitTimeService
 from .table_allocation_service import TableAllocationService
+from .wait_time_service import WaitTimeService
 
 
 class QueueService:

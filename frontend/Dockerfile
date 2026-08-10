@@ -7,9 +7,6 @@ RUN npm install --frozen-lockfile || npm install
 COPY . .
 RUN npm run build
 
-COPY . .
-RUN npm run build
-
 FROM node:20-alpine AS runner
 
 RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser

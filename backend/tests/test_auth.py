@@ -1,5 +1,4 @@
 """Test: Auth routes and basic auth flows."""
-import pytest
 
 
 class TestAuth:

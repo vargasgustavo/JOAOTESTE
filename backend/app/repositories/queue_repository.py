@@ -1,7 +1,13 @@
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
-from ..models import QueueEntry, QueueStatus
+
 from ..extensions import db
+from ..models import QueueEntry, QueueStatus
+
+
+def _supports_for_update() -> bool:
+    """Return True when the active dialect supports SELECT FOR UPDATE SKIP LOCKED."""
+    return db.engine.dialect.name != "sqlite"
 
 
 class QueueRepository:
@@ -20,20 +26,9 @@ class QueueRepository:
             )
             .order_by(QueueEntry.joined_at.asc())
         )
-        try:
+        if _supports_for_update():
             stmt = stmt.with_for_update(skip_locked=True)
-            return list(self._session.execute(stmt).scalars().all())
-        except Exception:
-            # SQLite does not support FOR UPDATE SKIP LOCKED - fallback for testing
-            stmt = (
-                select(QueueEntry)
-                .where(
-                    QueueEntry.restaurant_id == restaurant_id,
-                    QueueEntry.status == QueueStatus.WAITING,
-                )
-                .order_by(QueueEntry.joined_at.asc())
-            )
-            return list(self._session.execute(stmt).scalars().all())
+        return list(self._session.execute(stmt).scalars().all())
 
     def list_by_restaurant(self, restaurant_id: str, status: str | None = None) -> list[QueueEntry]:
         stmt = select(QueueEntry).where(QueueEntry.restaurant_id == restaurant_id)

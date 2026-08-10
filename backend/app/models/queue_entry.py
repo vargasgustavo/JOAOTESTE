@@ -1,8 +1,11 @@
 import enum
-from sqlalchemy import String, Integer, DateTime, Enum as SAEnum, ForeignKey, Index
-from sqlalchemy.orm import mapped_column, Mapped, relationship
+
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String
+from sqlalchemy import Enum as SAEnum
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from ..extensions import db
-from .base import utcnow, new_uuid
+from .base import new_uuid, utcnow
 
 
 class QueueStatus(str, enum.Enum):

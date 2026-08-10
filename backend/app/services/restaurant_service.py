@@ -1,6 +1,6 @@
+from ..extensions import db
 from ..models import Restaurant
 from ..repositories import RestaurantRepository
-from ..extensions import db
 
 
 class RestaurantService:

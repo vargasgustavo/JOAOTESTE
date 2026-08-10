@@ -1,11 +1,10 @@
 """Test: Tenant isolation."""
-import pytest
 
 
 class TestTenantIsolation:
     def test_staff_cannot_see_other_restaurant_queue(self, client, app, restaurant, staff_user):
-        from app.models import Restaurant, QueueEntry, QueueStatus
         from app.extensions import db
+        from app.models import QueueEntry, QueueStatus, Restaurant
 
         with app.app_context():
             rest_b = Restaurant(
@@ -32,8 +31,8 @@ class TestTenantIsolation:
         assert resp.status_code == 403
 
     def test_staff_can_see_own_restaurant_queue(self, client, app, restaurant, staff_user):
-        from app.models import QueueEntry, QueueStatus
         from app.extensions import db
+        from app.models import QueueEntry, QueueStatus
 
         with app.app_context():
             entry = QueueEntry(

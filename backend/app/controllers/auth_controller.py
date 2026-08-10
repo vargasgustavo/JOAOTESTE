@@ -1,9 +1,9 @@
-from flask import Blueprint, request, jsonify, make_response, current_app, g
+from flask import Blueprint, current_app, g, jsonify, make_response, request
 from marshmallow import ValidationError
 
-from ..services.auth_service import AuthService
-from ..schemas import RegisterSchema, LoginSchema, UserSchema
 from ..extensions import limiter
+from ..schemas import LoginSchema, RegisterSchema, UserSchema
+from ..services.auth_service import AuthService
 from .middleware import require_auth, require_csrf
 
 auth_bp = Blueprint("auth", __name__)

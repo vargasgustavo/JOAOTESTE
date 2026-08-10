@@ -1,11 +1,12 @@
 import os
 import secrets
+
 import sentry_sdk
 from flask import Flask, request
 from sentry_sdk.integrations.flask import FlaskIntegration
 
 from .config import config_map
-from .extensions import db, migrate, cors, limiter, celery
+from .extensions import celery, cors, db, limiter, migrate
 
 
 def create_app(config_name: str | None = None) -> Flask:
@@ -64,7 +65,7 @@ def _init_extensions(app: Flask) -> Flask:
 
     @app.after_request
     def set_csrf_cookie(response):
-        if not app.config.get("TESTING") and not app.config.get("WTF_CSRF_ENABLED") is False:
+        if not app.config.get("TESTING") and app.config.get("WTF_CSRF_ENABLED") is not False:
             if not request.cookies.get(app.config["CSRF_COOKIE_NAME"]):
                 csrf_val = secrets.token_hex(32)
                 response.set_cookie(
@@ -82,10 +83,10 @@ def _init_extensions(app: Flask) -> Flask:
 
 def _register_blueprints(app: Flask) -> None:
     from .controllers.auth_controller import auth_bp
+    from .controllers.dashboard_controller import dashboard_bp
+    from .controllers.queue_controller import queue_bp
     from .controllers.restaurant_controller import restaurant_bp
     from .controllers.table_controller import table_bp
-    from .controllers.queue_controller import queue_bp
-    from .controllers.dashboard_controller import dashboard_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(restaurant_bp, url_prefix="/api/restaurants")

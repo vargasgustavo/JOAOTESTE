@@ -1,10 +1,10 @@
-from flask import Blueprint, request, jsonify, g
+from flask import Blueprint, g, jsonify, request
 from marshmallow import ValidationError
 
-from ..services.restaurant_service import RestaurantService
-from ..schemas import RestaurantCreateSchema, RestaurantUpdateSchema, RestaurantSchema
-from .middleware import require_auth, require_roles, require_csrf
 from ..models import UserRole
+from ..schemas import RestaurantCreateSchema, RestaurantSchema, RestaurantUpdateSchema
+from ..services.restaurant_service import RestaurantService
+from .middleware import require_auth, require_csrf, require_roles
 
 restaurant_bp = Blueprint("restaurants", __name__)
 _create_schema = RestaurantCreateSchema()

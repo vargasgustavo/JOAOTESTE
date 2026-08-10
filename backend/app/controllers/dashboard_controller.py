@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, g
+from flask import Blueprint, jsonify
 
 from ..services.dashboard_service import DashboardService
 from .middleware import require_auth, verify_restaurant_access

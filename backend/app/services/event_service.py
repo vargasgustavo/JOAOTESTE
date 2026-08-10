@@ -2,8 +2,6 @@ from datetime import datetime, timezone
 
 from ..models import TableEvent
 from ..repositories import EventRepository
-from ..extensions import db
-
 
 EVENT_TABLE_OCCUPIED = "TABLE_OCCUPIED"
 EVENT_TABLE_CLEANING = "TABLE_CLEANING"

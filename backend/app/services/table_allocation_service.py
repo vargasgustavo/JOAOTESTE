@@ -1,13 +1,13 @@
 from datetime import datetime, timezone
 
-from flask import current_app
-
-from ..models import Table, TableStatus, QueueEntry, QueueStatus
-from ..repositories import TableRepository, QueueRepository, RestaurantRepository
-from ..extensions import db
-from .event_service import EventService, EVENT_TABLE_AVAILABLE, EVENT_TABLE_RESERVED, EVENT_CUSTOMER_ASSIGNED, EVENT_CUSTOMER_CALLED
-from .notifications.notification_service import NotificationService
+from ..models import QueueEntry, QueueStatus, Table, TableStatus
+from ..repositories import QueueRepository, RestaurantRepository, TableRepository
 from ..tasks.notification_tasks import send_queue_called_task
+from .event_service import (
+    EVENT_CUSTOMER_ASSIGNED,
+    EVENT_CUSTOMER_CALLED,
+    EventService,
+)
 
 
 class TableAllocationService:

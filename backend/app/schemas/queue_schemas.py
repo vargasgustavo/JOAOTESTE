@@ -1,4 +1,4 @@
-from marshmallow import Schema, fields, validate, RAISE
+from marshmallow import RAISE, Schema, fields, validate
 
 
 class QueueEntryCreateSchema(Schema):

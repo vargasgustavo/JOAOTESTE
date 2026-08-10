@@ -1,5 +1,4 @@
 """Test: FIFO allocation, invalid transitions."""
-import pytest
 from unittest.mock import patch
 
 
@@ -7,9 +6,9 @@ class TestFIFOAllocation:
     """Table cap=4, queue=[João-4, Maria-2, Pedro-5] → João gets table."""
 
     def test_fifo_compatible_allocation(self, app, restaurant):
-        from app.models import Table, TableStatus, QueueEntry, QueueStatus
-        from app.services.table_allocation_service import TableAllocationService
         from app.extensions import db
+        from app.models import QueueEntry, QueueStatus, Table, TableStatus
+        from app.services.table_allocation_service import TableAllocationService
 
         with app.app_context():
             table = Table(
@@ -57,8 +56,8 @@ class TestFIFOAllocation:
 
 class TestInvalidTableTransitions:
     def test_available_to_occupied_is_invalid(self, app, restaurant):
-        from app.models import Table, TableStatus
         from app.extensions import db
+        from app.models import Table, TableStatus
 
         with app.app_context():
             table = Table(restaurant_id=restaurant.id, number=2, capacity=4, status=TableStatus.AVAILABLE)
@@ -67,8 +66,8 @@ class TestInvalidTableTransitions:
             assert not table.can_transition_to(TableStatus.OCCUPIED)
 
     def test_valid_full_cycle(self, app, restaurant):
-        from app.models import Table, TableStatus
         from app.extensions import db
+        from app.models import Table, TableStatus
 
         with app.app_context():
             table = Table(restaurant_id=restaurant.id, number=3, capacity=4, status=TableStatus.OCCUPIED)
@@ -84,8 +83,8 @@ class TestInvalidTableTransitions:
             assert table.can_transition_to(TableStatus.OCCUPIED)
 
     def test_transition_endpoint_returns_409(self, client, app, restaurant, staff_user):
-        from app.models import Table, TableStatus
         from app.extensions import db
+        from app.models import Table, TableStatus
 
         with app.app_context():
             table = Table(restaurant_id=restaurant.id, number=4, capacity=4, status=TableStatus.AVAILABLE)

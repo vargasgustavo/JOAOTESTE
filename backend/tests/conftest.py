@@ -1,6 +1,7 @@
 import os
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 os.environ.setdefault("SECRET_KEY", "test-secret-key-minimum-length-32")
 os.environ.setdefault("JWT_SECRET_KEY", "test-jwt-secret-key-minimum-32ch")
@@ -62,8 +63,8 @@ def client(app):
 
 @pytest.fixture
 def restaurant(app):
-    from app.models import Restaurant
     from app.extensions import db
+    from app.models import Restaurant
     with app.app_context():
         r = Restaurant(
             name="Test Restaurant",
@@ -84,9 +85,10 @@ def restaurant(app):
 
 @pytest.fixture
 def admin_user(app, restaurant):
-    from app.models import User, UserRole
-    from app.extensions import db
     from argon2 import PasswordHasher
+
+    from app.extensions import db
+    from app.models import User, UserRole
     ph = PasswordHasher(time_cost=1, memory_cost=8192, parallelism=1)
     with app.app_context():
         u = User(
@@ -109,9 +111,10 @@ def admin_user(app, restaurant):
 
 @pytest.fixture
 def staff_user(app, restaurant):
-    from app.models import User, UserRole
-    from app.extensions import db
     from argon2 import PasswordHasher
+
+    from app.extensions import db
+    from app.models import User, UserRole
     ph = PasswordHasher(time_cost=1, memory_cost=8192, parallelism=1)
     with app.app_context():
         u = User(
@@ -134,9 +137,10 @@ def staff_user(app, restaurant):
 
 @pytest.fixture
 def customer_user(app):
-    from app.models import User, UserRole
-    from app.extensions import db
     from argon2 import PasswordHasher
+
+    from app.extensions import db
+    from app.models import User, UserRole
     ph = PasswordHasher(time_cost=1, memory_cost=8192, parallelism=1)
     with app.app_context():
         u = User(

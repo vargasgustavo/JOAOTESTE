@@ -1,9 +1,10 @@
 import functools
 import secrets
-from flask import request, jsonify, current_app, g
 
-from ..services.auth_service import AuthService
+from flask import current_app, g, jsonify, request
+
 from ..models import UserRole
+from ..services.auth_service import AuthService
 
 
 def get_token_from_cookie(token_type: str = "access") -> str | None:

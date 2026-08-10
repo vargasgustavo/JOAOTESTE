@@ -4,13 +4,13 @@ from typing import Any
 
 import jwt
 import redis
-from flask import current_app
 from argon2 import PasswordHasher
-from argon2.exceptions import VerifyMismatchError, InvalidHashError
+from argon2.exceptions import InvalidHashError, VerifyMismatchError
+from flask import current_app
 
+from ..extensions import db
 from ..models import User, UserRole
 from ..repositories import UserRepository
-from ..extensions import db
 
 
 class AuthService:
@@ -147,5 +147,12 @@ class AuthService:
     def _revoke_jti(self, jti: str, exp: Any) -> None:
         r = self._get_redis()
         now = datetime.now(timezone.utc).timestamp()
-        ttl = max(int(exp - now), 1) if isinstance(exp, (int, float)) else 3600
+        if isinstance(exp, (int, float)):
+            exp_ts = float(exp)
+        elif hasattr(exp, "timestamp"):
+            # PyJWT may return a datetime object depending on config
+            exp_ts = exp.timestamp()
+        else:
+            exp_ts = now + 3600
+        ttl = max(int(exp_ts - now), 1)
         r.setex(f"denylist:{jti}", ttl, "1")

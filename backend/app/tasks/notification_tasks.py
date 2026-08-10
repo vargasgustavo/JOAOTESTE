@@ -1,4 +1,5 @@
 import logging
+
 from ..extensions import celery
 
 logger = logging.getLogger(__name__)

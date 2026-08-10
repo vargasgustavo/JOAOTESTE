@@ -1,7 +1,8 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from ..models import Restaurant
+
 from ..extensions import db
+from ..models import Restaurant
 
 
 class RestaurantRepository:
@@ -14,7 +15,7 @@ class RestaurantRepository:
     def list_active(self) -> list[Restaurant]:
         return list(
             self._session.execute(
-                select(Restaurant).where(Restaurant.is_active == True)
+                select(Restaurant).where(Restaurant.is_active.is_(True))
             ).scalars().all()
         )
 

@@ -1,7 +1,8 @@
-from sqlalchemy import select, func, case
-from ..models import Table, TableStatus, QueueEntry, QueueStatus
-from ..repositories import RestaurantRepository
+from sqlalchemy import case, func, select
+
 from ..extensions import db
+from ..models import QueueEntry, QueueStatus, Table, TableStatus
+from ..repositories import RestaurantRepository
 from .wait_time_service import WaitTimeService
 
 
@@ -15,37 +16,16 @@ class DashboardService:
         if not restaurant:
             return None
 
-        total = db.session.execute(
-            select(func.count(Table.id)).where(Table.restaurant_id == restaurant_id)
-        ).scalar_one() or 0
-
-        occupied = db.session.execute(
-            select(func.count(Table.id)).where(
-                Table.restaurant_id == restaurant_id,
-                Table.status == TableStatus.OCCUPIED,
-            )
-        ).scalar_one() or 0
-
-        cleaning = db.session.execute(
-            select(func.count(Table.id)).where(
-                Table.restaurant_id == restaurant_id,
-                Table.status == TableStatus.CLEANING,
-            )
-        ).scalar_one() or 0
-
-        available = db.session.execute(
-            select(func.count(Table.id)).where(
-                Table.restaurant_id == restaurant_id,
-                Table.status == TableStatus.AVAILABLE,
-            )
-        ).scalar_one() or 0
-
-        reserved = db.session.execute(
-            select(func.count(Table.id)).where(
-                Table.restaurant_id == restaurant_id,
-                Table.status == TableStatus.RESERVED,
-            )
-        ).scalar_one() or 0
+        # Single aggregation query for all table counts
+        row = db.session.execute(
+            select(
+                func.count(Table.id).label("total"),
+                func.count(case((Table.status == TableStatus.OCCUPIED, 1))).label("occupied"),
+                func.count(case((Table.status == TableStatus.CLEANING, 1))).label("cleaning"),
+                func.count(case((Table.status == TableStatus.AVAILABLE, 1))).label("available"),
+                func.count(case((Table.status == TableStatus.RESERVED, 1))).label("reserved"),
+            ).where(Table.restaurant_id == restaurant_id)
+        ).one()
 
         queue_count = db.session.execute(
             select(func.count(QueueEntry.id)).where(
@@ -59,11 +39,11 @@ class DashboardService:
         return {
             "restaurant_id": restaurant_id,
             "restaurant_name": restaurant.name,
-            "total_tables": total,
-            "occupied_tables": occupied,
-            "cleaning_tables": cleaning,
-            "available_tables": available,
-            "reserved_tables": reserved,
+            "total_tables": row.total,
+            "occupied_tables": row.occupied,
+            "cleaning_tables": row.cleaning,
+            "available_tables": row.available,
+            "reserved_tables": row.reserved,
             "queue_count": queue_count,
             "avg_wait_minutes": avg_wait,
         }

@@ -1,8 +1,8 @@
-from sqlalchemy import String, DateTime, ForeignKey, Text
-from sqlalchemy import JSON
-from sqlalchemy.orm import mapped_column, Mapped, relationship
+from sqlalchemy import JSON, DateTime, ForeignKey, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from ..extensions import db
-from .base import utcnow, new_uuid
+from .base import new_uuid, utcnow
 
 
 class TableEvent(db.Model):

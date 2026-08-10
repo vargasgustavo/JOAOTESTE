@@ -1,10 +1,10 @@
-from flask import Blueprint, request, jsonify, g
+from flask import Blueprint, jsonify, request
 from marshmallow import ValidationError
 
-from ..services.table_service import TableService
-from ..schemas import TableCreateSchema, TableUpdateSchema, TableSchema
-from .middleware import require_auth, require_roles, require_csrf, verify_restaurant_access
 from ..models import UserRole
+from ..schemas import TableCreateSchema, TableSchema, TableUpdateSchema
+from ..services.table_service import TableService
+from .middleware import require_auth, require_csrf, require_roles, verify_restaurant_access
 
 table_bp = Blueprint("tables", __name__)
 _create_schema = TableCreateSchema()
@@ -76,8 +76,8 @@ def occupy_table(table_id: str):
 @require_roles(UserRole.STAFF, UserRole.RESTAURANT_ADMIN)
 @require_csrf
 def manual_allocate(table_id: str):
-    from ..services.table_allocation_service import TableAllocationService
     from ..repositories import TableRepository
+    from ..services.table_allocation_service import TableAllocationService
     repo = TableRepository()
     table = repo.get_by_id(table_id)
     if not table:

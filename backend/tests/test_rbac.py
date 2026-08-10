@@ -1,11 +1,10 @@
 """Test: RBAC enforcement."""
-import pytest
 
 
 class TestRBAC:
     def test_customer_cannot_release_table(self, client, app, restaurant, customer_user, staff_user):
-        from app.models import Table, TableStatus
         from app.extensions import db
+        from app.models import Table, TableStatus
         with app.app_context():
             table = Table(
                 restaurant_id=restaurant.id,

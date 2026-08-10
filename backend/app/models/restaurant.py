@@ -1,7 +1,8 @@
-from sqlalchemy import String, Boolean, DateTime, JSON
-from sqlalchemy.orm import mapped_column, Mapped, relationship
+from sqlalchemy import JSON, Boolean, DateTime, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from ..extensions import db
-from .base import utcnow, new_uuid
+from .base import new_uuid, utcnow
 
 
 class Restaurant(db.Model):

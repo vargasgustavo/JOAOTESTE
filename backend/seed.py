@@ -8,17 +8,18 @@ sys.path.insert(0, os.path.dirname(__file__))
 os.environ.setdefault("FLASK_ENV", "development")
 os.environ.setdefault("SECRET_KEY", "seed-secret-key")
 os.environ.setdefault("JWT_SECRET_KEY", "seed-jwt-secret-key")
-os.environ.setdefault("DATABASE_URL", "******localhost:5432/restaurant")
+os.environ.setdefault("DATABASE_URL", "postgresql://restaurant:restaurant@localhost:5432/restaurant")
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
 os.environ.setdefault("FRONTEND_URL", "http://localhost:3000")
 os.environ.setdefault("ARGON2_TIME_COST", "1")
 os.environ.setdefault("ARGON2_MEMORY_COST", "8192")
 os.environ.setdefault("ARGON2_PARALLELISM", "1")
 
+from argon2 import PasswordHasher
+
 from app import create_app
 from app.extensions import db
-from app.models import User, UserRole, Restaurant, Table, TableStatus, QueueEntry, QueueStatus
-from argon2 import PasswordHasher
+from app.models import QueueEntry, QueueStatus, Restaurant, Table, TableStatus, User, UserRole
 
 app = create_app("development")
 
@@ -112,7 +113,7 @@ with app.app_context():
 
     print("✅ Seed complete!")
     print(f"   Restaurant: {restaurant.name} (ID: {restaurant.id})")
-    print(f"   Admin: admin@restaurante.com / Admin@123")
-    print(f"   Staff: staff@restaurante.com / Staff@123")
-    print(f"   Customer phone: 11333333333 / Customer@123")
+    print("   Admin: admin@restaurante.com / Admin@123")
+    print("   Staff: staff@restaurante.com / Staff@123")
+    print("   Customer phone: 11333333333 / Customer@123")
     print(f"   Queue entries: {len(customers)}")

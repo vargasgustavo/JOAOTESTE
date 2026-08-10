@@ -1,8 +1,9 @@
-[ruff]
 line-length = 120
 target-version = "py312"
-select = ["E", "F", "W", "I"]
-ignore = ["E501"]
 
-[ruff.lint.isort]
+[lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501", "F821"]
+
+[lint.isort]
 known-first-party = ["app"]

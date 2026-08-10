@@ -1,10 +1,9 @@
 from datetime import datetime, timezone
 
+from ...extensions import db
+from ...repositories import NotificationRepository
 from .base_provider import NotificationProvider
 from .mock_provider import MockProvider
-from ...models import Notification
-from ...repositories import NotificationRepository
-from ...extensions import db
 
 
 class NotificationService:

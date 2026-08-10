@@ -1,8 +1,8 @@
-from .user import User, UserRole
-from .restaurant import Restaurant
-from .table import Table, TableStatus, VALID_TRANSITIONS
+from .events import Notification, TableEvent
 from .queue_entry import QueueEntry, QueueStatus
-from .events import TableEvent, Notification
+from .restaurant import Restaurant
+from .table import VALID_TRANSITIONS, Table, TableStatus
+from .user import User, UserRole
 
 __all__ = [
     "User", "UserRole",

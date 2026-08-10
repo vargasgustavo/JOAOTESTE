@@ -1,7 +1,7 @@
-from .auth_schemas import RegisterSchema, LoginSchema, UserSchema
-from .restaurant_schemas import RestaurantCreateSchema, RestaurantUpdateSchema, RestaurantSchema
-from .table_schemas import TableCreateSchema, TableUpdateSchema, TableSchema
+from .auth_schemas import LoginSchema, RegisterSchema, UserSchema
 from .queue_schemas import QueueEntryCreateSchema, QueueEntrySchema
+from .restaurant_schemas import RestaurantCreateSchema, RestaurantSchema, RestaurantUpdateSchema
+from .table_schemas import TableCreateSchema, TableSchema, TableUpdateSchema
 
 __all__ = [
     "RegisterSchema", "LoginSchema", "UserSchema",
