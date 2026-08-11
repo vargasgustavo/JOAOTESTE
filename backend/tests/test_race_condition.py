@@ -69,6 +69,17 @@ def test_uma_mesa_para_dois_grupos_chama_apenas_o_primeiro(api, restaurant, staf
     assert segundo["status"] == QueueStatus.WAITING.value
 
 
+def test_services_usados_nas_threads_tem_a_assinatura_esperada(app):
+    """Guarda-corpo: os testes com threads so rodam em PostgreSQL, entao a forma de
+    construir os services precisa ser exercitada tambem em SQLite."""
+    from app.services import QueueService, TableService, transaction
+    from app.services.wait_time_service import WaitTimeService
+
+    with transaction() as session:
+        assert TableService(session) is not None
+        assert QueueService(session, WaitTimeService(session)) is not None
+
+
 @requires_postgres
 def test_liberacoes_simultaneas_em_threads_nao_duplicam_chamada(app, restaurant, staff):
     """Duas mesas liberadas ao mesmo tempo, dois clientes na fila: um cada."""
@@ -85,13 +96,12 @@ def test_liberacoes_simultaneas_em_threads_nao_duplicam_chamada(app, restaurant,
 
     def liberar(table_id) -> None:
         from app.services import TableService, transaction
-        from app.services.wait_time_service import WaitTimeService
 
         try:
             with app.app_context():
                 largada.wait(timeout=10)
                 with transaction() as session:
-                    service = TableService(session, WaitTimeService(session))
+                    service = TableService(session)
                     _, allocation = service.release_table(table_id, restaurant_id, staff_id)
                 resultados.append(allocation.customer_name if allocation else None)
                 db.session.remove()
