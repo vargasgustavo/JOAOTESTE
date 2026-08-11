@@ -20,4 +20,6 @@ ignore = ["B008", "S101"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Garante que "pytest" (executavel) enxergue o pacote app, e nao so "python -m pytest".
+pythonpath = ["."]
 filterwarnings = ["ignore::DeprecationWarning"]
