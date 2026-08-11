@@ -1,0 +1,6 @@
+# Scripts que rodam dentro dos containers precisam de LF, mesmo clonados no Windows.
+* text=auto eol=lf
+*.sh text eol=lf
+*.png binary
+*.jpg binary
+*.ico binary

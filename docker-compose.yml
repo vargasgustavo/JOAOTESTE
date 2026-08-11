@@ -1,0 +1,83 @@
+# Sobe tudo com: docker compose up --build
+# Apenas o Nginx expoe porta para o host; o resto conversa na rede interna.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mesas}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mesas}
+      POSTGRES_DB: ${POSTGRES_DB:-mesas}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mesas} -d ${POSTGRES_DB:-mesas}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes", "--save", ""]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build: ./backend
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-mesas}:${POSTGRES_PASSWORD:-mesas}@postgres:5432/${POSTGRES_DB:-mesas}
+      REDIS_URL: redis://redis:6379/0
+      RUN_SEED: ${RUN_SEED:-true}
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    expose: ["8000"]
+    restart: unless-stopped
+
+  worker:
+    build: ./backend
+    command: ["celery", "-A", "celery_worker.celery", "worker", "--loglevel=info", "--concurrency=2"]
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-mesas}:${POSTGRES_PASSWORD:-mesas}@postgres:5432/${POSTGRES_DB:-mesas}
+      REDIS_URL: redis://redis:6379/0
+      RUN_SEED: "false"
+      # Quem migra e a API; o worker so consome a fila.
+      RUN_MIGRATIONS: "false"
+    depends_on:
+      api: {condition: service_healthy}
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    restart: unless-stopped
+
+  web:
+    build: ./frontend
+    environment:
+      API_INTERNAL_URL: http://api:8000
+      NODE_ENV: production
+    depends_on:
+      api: {condition: service_healthy}
+    expose: ["3000"]
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "${HTTP_PORT:-8080}:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      api: {condition: service_started}
+      web: {condition: service_started}
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
