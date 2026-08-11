@@ -7,7 +7,8 @@ const apiUrl = process.env.API_INTERNAL_URL ?? "http://127.0.0.1:8000";
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  output: "standalone",
+  // standalone somente na imagem Docker; localmente "next start" e usado nos testes.
+  output: process.env.NEXT_OUTPUT === "standalone" ? "standalone" : undefined,
   async rewrites() {
     return [{ source: "/api/:path*", destination: `${apiUrl}/:path*` }];
   },
