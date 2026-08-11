@@ -85,10 +85,16 @@ class NotificationService:
 
 
 def dispatch_notification(notification_id: uuid.UUID, table_number: str) -> None:
-    """Enfileira no Celery; se o broker estiver fora, registra e segue (nao quebra o fluxo)."""
+    """Enfileira no Celery; se o broker estiver fora, registra e segue (nao quebra o fluxo).
+
+    A publicacao usa retry=False de proposito: liberar mesa nunca pode ficar preso
+    esperando o broker. A notificacao permanece PENDING para reprocessamento.
+    """
     from app.tasks.notifications import send_notification_task
 
     try:
-        send_notification_task.delay(str(notification_id), table_number)
+        send_notification_task.apply_async(
+            args=(str(notification_id), table_number), retry=False
+        )
     except Exception:  # pragma: no cover - broker indisponivel
-        logger.exception("Falha ao enfileirar notificacao %s.", notification_id)
+        logger.warning("Broker indisponivel; notificacao %s segue PENDING.", notification_id)

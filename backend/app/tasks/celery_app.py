@@ -9,6 +9,14 @@ celery_app = Celery("mesas_filas")
 
 
 def init_celery(app: Flask) -> Celery:
+    eager = app.config.get("CELERY_TASK_ALWAYS_EAGER", False)
+    # Publicacao "fail fast": se o broker estiver fora, a acao do staff nao pode
+    # ficar presa em retentativas de rede. A notificacao fica PENDING e e logada.
+    fail_fast = {
+        "socket_connect_timeout": 2,
+        "socket_timeout": 2,
+        "retry_policy": {"max_retries": 1, "interval_start": 0, "interval_max": 0.5, "timeout": 3},
+    }
     celery_app.conf.update(
         broker_url=app.config["CELERY_BROKER_URL"],
         result_backend=app.config["CELERY_RESULT_BACKEND"],
@@ -19,9 +27,14 @@ def init_celery(app: Flask) -> Celery:
         enable_utc=True,
         task_acks_late=True,
         worker_prefetch_multiplier=1,
-        task_always_eager=app.config.get("CELERY_TASK_ALWAYS_EAGER", False),
-        task_eager_propagates=app.config.get("CELERY_TASK_ALWAYS_EAGER", False),
-        broker_connection_retry_on_startup=True,
+        task_always_eager=eager,
+        task_eager_propagates=eager,
+        task_ignore_result=True,
+        task_publish_retry=False,
+        broker_connection_retry_on_startup=False,
+        broker_connection_max_retries=1,
+        broker_transport_options=fail_fast,
+        result_backend_transport_options=fail_fast,
     )
 
     class FlaskTask(Task):
